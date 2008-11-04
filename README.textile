@@ -5,15 +5,12 @@ This plugin enables the binding of other html elements to models, just like form
 An example says it all:
 
   <% definition_list_for @user do |dl| %>
-
     <%= dl.dt :login %>
     <%= dl.dd :login %>
-
     <%= dl.dt :email %>
     <%= dl.dd :email do |mail_address| %>
       <%= mail_to mail_address %>
     <% end %>
-
   <% end %>
     
 The dt method will automatically display the human_attribute_name of this 
