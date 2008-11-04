@@ -1,4 +1,31 @@
 h1. ModelBasedHtml
 
+This plugin enables the binding of other html elements to models, just like form_for.
+
+An example says it all:
+
+  <% definition_list_for @user do |dl| %>
+
+    <%= dl.dt :login %>
+    <%= dl.dd :login %>
+
+    <%= dl.dt :email %>
+    <%= dl.dd :email do |mail_address| %>
+      <%= mail_to mail_address %>
+    <% end %>
+
+  <% end %>
+    
+The dt method will automatically display the human_attribute_name of this 
+attribute, the dd will automatically show the value of this attribute. You can 
+pass a block to these methods to play with the value even more, like making it 
+a link. Because these values may be harmful, a dd_h method is also available,
+sanitizing html automatically. You can limit it to one line, using dt_and_dd or dt_and_dd_h.
+
+A table_for is also under development.
+
+Please note that this plugin is still very much under development. Use at your own risk.
+
+
 
 Copyright (c) 2008 Iain Hecker, released under the MIT license
