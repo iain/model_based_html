@@ -2,8 +2,8 @@ module ModelBasedHtml
   
   module Helpers
 
-    def table_for(collection, &block)
-      ModelBasedHtml::Table.new(:table, collection, self, &block)
+    def table_for(collection, options = {}, &block)
+      ModelBasedHtml::Table.new(:table, collection, self, options, &block)
     end
     
     def definition_list_for(object, &block)
@@ -19,6 +19,7 @@ module ModelBasedHtml
       default(type, object, template, &block)
     end
 
+    # Sets all the defaults and stuff
     def default(type, object, template, &block)
       object = object.to_s.camelize.constantize.new if object.is_a?(Symbol)
       @object = object
@@ -55,7 +56,9 @@ module ModelBasedHtml
     private
 
     def html_attrs_for_object(object)
-      { :class => object_name(object), :id => "#{object_name(object)}_#{object.id}" }
+      id = object_name(object)
+      id = object.new_record? ? "new_#{id}" : "#{id}_#{object.id}"
+      { :class => object_name(object), :id => id }
     end
 
     def html_attrs_for_collection(collection)
@@ -93,22 +96,19 @@ module ModelBasedHtml
 
     def value(method_or_value)
       return method_or_value unless method_or_value.is_a?(Symbol)
-      real_object.send(method_or_value)
+      @object.send(method_or_value)
     end
 
     def name(method_or_value)
       return method_or_value unless method_or_value.is_a?(Symbol)
-      real_object.class.human_attribute_name(method_or_value.to_s)
-    end
-
-    def real_object
-      @object.is_a?(Array) ? @object.first : @object
+      @object.class.human_attribute_name(method_or_value.to_s)
     end
 
     # Returns an empty string so it doesn't matter if you
     # echo it in your views.
     # <% dl.dd :name %> will be the same as <%= dl.dd :name %>
     def concat(*args)
+      @template.concat("\n")
       @template.concat(*args)
       ""
     end
@@ -144,33 +144,57 @@ module ModelBasedHtml
   
   class Table < ModelBasedHtml::Base
 
+    def initialize(type, collection, template, options = {}, &block)
+      # ModelBasedHtml::Table.new(:table, collection, self, &block)
+      @force = options.delete(:force)
+      if collection.empty?
+        if @force
+          object = @force.new
+        else
+          return ''
+        end
+      else
+        object = collection.first
+      end
+      @collection = collection
+      default(:table, object, template, &block)
+    end
+
     def thead(options = {}, &block)
       concat(start_tag(:thead, options))
+      @inside_thead = true
       yield
+      @inside_thead = false
       concat("</thead>")
     end
 
     def tbody(options = {}, &block)
       sanitize = options.delete(:sanitize) or false
       concat(start_tag(:tbody, options))
-      collection = (@object.is_a?(Array) ? @object : [@object])
   
-      if block_given?
-        collection.each do |object|
-          yield object
+      if @collection.empty? and @force
+        raise ArgumentError, "No columns defined, use thead and tr to do so." if @columns.nil? or @columns.empty?
+        tr(@object) do
+          td(I18n.t(:nothing), :colspan => @columns.size)
         end
       else
-        raise ArgumentError, "No columns defined for automatic table making" if @columns.nil?
-        collection.each do |o|
-          @columns.each do |column|
+        if block_given?
+          @collection.each do |object|
+            @object = object
+            yield object
+          end
+        else
+          raise ArgumentError, "No columns defined for automatic table making" if @columns.nil? or @columns.empty?
+          @collection.each do |o|
             tr(o) do
-              th(o.class.human_attribute_name(column.to_s))
-              sanitize ? td_h(o.send(column)) : td(o.send(column))
+              @columns.each do |column|
+                sanitize ? td_h(o.send(column)) : td(o.send(column))
+              end
             end
           end
         end
       end
-      concat("</thead>")
+      concat("</tbody>")
     end
 
     def td(method_or_value = nil, options = {}, &block)
@@ -183,11 +207,11 @@ module ModelBasedHtml
 
     def th(method_or_value = nil, options = {}, &block)
       @columns ||= []
-      @columns << method_or_value
+      @columns << method_or_value if @inside_thead
       name_tag(:th, method_or_value, options, &block)
     end
 
-    def tr(object, &block)
+    def tr(object = @object, &block)
       row = @template.cycle("odd", "even", :name => "table_#{@object.object_id}")
       concat(start_tag(:tr, :class => row, :object_html => object))
       yield

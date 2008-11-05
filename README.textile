@@ -1,28 +1,88 @@
 h1. ModelBasedHtml
 
-This plugin enables the binding of other html elements to models, just like form_for.
+This plugin enables the binding of other html elements to models, comparible
+with form_for. This plugin works best with "Haml":http://haml.hamptoncatlin.com/,
+which I strongly recommend.
 
-An example says it all:
+h2. Definition Lists
+
+I'll start with an example, which explains the basic methods you can use:
 
   <% definition_list_for @user do |dl| %>
-    <%= dl.dt :login %>
-    <%= dl.dd :login %>
+    
+    <%= dl.dt_and_dd :login %>
+    
     <%= dl.dt :email %>
     <%= dl.dd :email do |mail_address| %>
       <%= mail_to mail_address %>
     <% end %>
+      
+    <%= dl.dt :signature %>
+    <%= dl.dd_h :signature %>
+    
   <% end %>
     
 The dt method will automatically display the human_attribute_name of this 
-attribute, the dd will automatically show the value of this attribute. You can 
-pass a block to these methods to play with the value even more, like making it 
-a link. Because these values may be harmful, a dd_h method is also available,
-sanitizing html automatically. You can limit it to one line, using dt_and_dd or dt_and_dd_h.
+attribute (and thus translate it), the dd will automatically show the value 
+of this attribute. You can pass a block to these methods to play with the value 
+even more, like making it a link. Because these values may be harmful, a dd_h 
+method is also available, sanitizing html automatically. You can limit it to 
+one line, using dt_and_dd or dt_and_dd_h.
 
-A table_for is also under development.
+h2. Tables
 
-Please note that this plugin is still very much under development. Use at your own risk.
+A similar option is available for tables.
 
+  <% table_for @users do |table| %>
+    
+    <% table.thead do %>
+      <%= table.th :login %>
+      <%= table.th :email %>
+      <%= table.th :signature %>
+    <% end %>
+    
+    <% table.tbody :sanitize => true %>
+    
+  <% end %>
+
+By not specifying a block to table.tbody, it automatically loops all records.
+Setting :sanitize to true will automatically escape all html in the tds.
+If you do specify a block to tbody, you can define each cell, just as you would
+do with the definition list. It automatically loops.
+
+  <% table_for @users do |table| %>
+    
+    <% table.thead do %>
+      <%= table.th :login %>
+      <%= table.th :email %>
+      <%= table.th :signature %>
+    <% end %>
+    
+    <% table.tbody do |user| %>
+      <% table.tr do %>
+        <%= table.td :login
+        <%= table.td :email do |email| %>
+          <%= mail_to(email) %>
+        <% end %>
+        <%= table.td_h :signature %>
+      <% end %>
+    <% end %>
+    
+  <% end %>
+
+If the collection was empty, it doesn't render a table at all. You can still
+force a table to render, so you can fill it with your own data. Fill the :force
+option with the class you're using. A td with the proper colspan will be
+rendered with a translatable message.
+
+  <% table_for @users, :force => User do |table| %>
+    # etc...
+  <% end %>
+
+h1. Nota bene
+
+This plugin is still in development and is in now way considered to be used in
+production. Please take care! If you'd like to contribute, please contact me!
 
 
 Copyright (c) 2008 Iain Hecker, released under the MIT license
