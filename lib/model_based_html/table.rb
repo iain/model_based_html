@@ -18,17 +18,17 @@ module ModelBasedHtml
       default(:table, object, template, &block)
     end
 
-    def thead(options = {}, &block)
+    def head(options = {}, &block)
       return "" if @collection.empty? and not @force
       reset_cell_count
       open_tag(start_tag(:thead, options))
-      @inside_thead = true
+      @inside_head = true
       yield
-      @inside_thead = false
+      @inside_head = false
       close_tag("</thead>")
     end
 
-    def tbody(options = {}, &block)
+    def body(options = {}, &block)
       when_not_empty do
         reset_cell_count
         sanitize = options.delete(:sanitize) or false
@@ -40,7 +40,7 @@ module ModelBasedHtml
             yield object
           end
         else
-          raise ArgumentError, "No columns defined. Make a thead with at least 1 th." if @columns.nil? or @columns.empty?
+          raise ArgumentError, "No columns defined. Make a head with at least 1 th." if @columns.nil? or @columns.empty?
           @collection.each do |o|
             tr(o) do
               @columns.each do |column|
@@ -70,7 +70,7 @@ module ModelBasedHtml
     def th(method_or_value = nil, options = {}, &block)
       count_cell
       @columns ||= []
-      @columns << method_or_value if @inside_thead
+      @columns << method_or_value if @inside_head
       name_tag(:th, method_or_value, options, &block)
     end
 
@@ -141,7 +141,7 @@ module ModelBasedHtml
         translate_method = :translate
       end
       
-      @template.send(translate_method, :"#{object_name}.empty_list", translate_options)
+      @template.send(translate_method, :"#{object_name}.empty_table", translate_options)
     end
 
     def count_cell
