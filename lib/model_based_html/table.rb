@@ -2,8 +2,6 @@ module ModelBasedHtml
 
   class Table < ModelBasedHtml::Base
 
-    attr_accessor :table_width
-
     def initialize(type, collection, template, options = {}, &block)
       @force = options.delete(:force)
       reset_cell_count
@@ -94,11 +92,11 @@ module ModelBasedHtml
         if @force
           tr(:class => "empty_collection_message", :object_html => nil) do
             td('', :colspan => @table_width) do
-              concat(yield_or_return_empty_collection_message(message, &block))
+              yield_or_return_empty_collection_message(message, &block)
             end
           end
         else
-          concat(yield_or_return_empty_collection_message(message, &block))
+          yield_or_return_empty_collection_message(message, &block)
         end
       end
     end
@@ -107,21 +105,34 @@ module ModelBasedHtml
       yield unless @collection.empty?
     end
 
+    def width
+      @table_width
+    end
+
     private
 
     def yield_or_return_empty_collection_message(message = nil, &block)
       if block_given?
         yield empty_collection_message
       else
-        return (message or empty_collection_message)
+        concat(message || empty_collection_message)
       end
     end
 
     def empty_collection_message
+      if @object.nil?
+        if @force
+          model_name = @force.human_name(:count => 0)
+        else
+          model_name = @template.translate(@template.params[:controller].to_sym, :default => [ :common, "entries"], :scope => :entries)
+        end
+      else
+        model_name = @object.class.human_name(:count => 0)
+      end
       translate_options = { 
-        :scope => :tables, 
-        :default => "No #{@object.class.human_name(:count => 0)} found.", 
-        :model => @object.class.human_name, 
+        :scope => :tables,
+        :default => "No #{model_name} found.",
+        :model => model_name,
         :count => 0 }
       if @template.respond_to?(:view_translate)
         translate_method = :view_translate
