@@ -23,41 +23,40 @@ module ModelBasedHtml
     def thead(options = {}, &block)
       return "" if @collection.empty? and not @force
       reset_cell_count
-      concat(start_tag(:thead, options))
+      open_tag(start_tag(:thead, options))
       @inside_thead = true
       yield
       @inside_thead = false
-      concat("</thead>")
+      close_tag("</thead>")
     end
 
     def tbody(options = {}, &block)
-      return "" if @collection.empty? and not @force
-      reset_cell_count
-      sanitize = options.delete(:sanitize) or false
-      concat(start_tag(:tbody, options))
-  
-      if @collection.empty? and @force
-        tr(@object) do
-          td(empty_collection_message, :colspan => table_width)
-        end
-      else
+      when_not_empty do
+        reset_cell_count
+        sanitize = options.delete(:sanitize) or false
+        open_tag(start_tag(:tbody, options))
+    
         if block_given?
           @collection.each do |object|
             @object = object
             yield object
           end
         else
-          raise ArgumentError, "No columns defined for automatic table making" if @columns.nil? or @columns.empty?
+          raise ArgumentError, "No columns defined. Make a thead with at least 1 th." if @columns.nil? or @columns.empty?
           @collection.each do |o|
             tr(o) do
               @columns.each do |column|
-                sanitize ? td_h(o.send(column)) : td(o.send(column))
+                if columns.is_a?(Symbol)
+                  sanitize ? td_h(o.send(column)) : td(o.send(column))
+                else
+                  td('')
+                end
               end
             end
           end
         end
+        close_tag("</tbody>")
       end
-      concat("</tbody>")
     end
 
     def td(method_or_value = nil, options = {}, &block)
@@ -77,32 +76,46 @@ module ModelBasedHtml
       name_tag(:th, method_or_value, options, &block)
     end
 
-    def tr(object = @object, &block)
+    def tr(options = {}, &block)
       reset_cell_count
-      concat(start_tag(:tr, :class => odd_or_even, :object_html => object))
+      options = {:object_html => @object}.merge(options)
+      options.update(:class => odd_or_even) unless options[:class]
+      open_tag(start_tag(:tr, options))
       yield
-      concat("</tr>")
+      close_tag("</tr>")
     end
 
     def odd_or_even
-      @template.cycle("odd", "even", :name => "table_#{@object.object_id}")
+      @template.cycle("odd", "even", :name => "table_#{self.object_id}")
     end
 
-    def empty(&block)
+    def when_empty(message = nil, &block)
       if @collection.empty?
         if @force
-          tr do
-            td(:colspan => table_width) do
-              yield empty_collection_message
+          tr(:class => "empty_collection_message", :object_html => nil) do
+            td('', :colspan => @table_width) do
+              concat(yield_or_return_empty_collection_message(message, &block))
             end
           end
         else
-          yield empty_collection_message
+          concat(yield_or_return_empty_collection_message(message, &block))
         end
       end
     end
 
+    def when_not_empty(&block)
+      yield unless @collection.empty?
+    end
+
     private
+
+    def yield_or_return_empty_collection_message(message = nil, &block)
+      if block_given?
+        yield empty_collection_message
+      else
+        return (message or empty_collection_message)
+      end
+    end
 
     def empty_collection_message
       translate_options = { 

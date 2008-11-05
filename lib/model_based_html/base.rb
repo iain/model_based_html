@@ -12,9 +12,9 @@ module ModelBasedHtml
       object = object.to_s.camelize.constantize.new if object.is_a?(Symbol)
       @object = object
       @template = template
-      concat(start_tag(type, :object_html => @object))
+      open_tag(start_tag(type, :object_html => @object))
       yield self
-      concat("</#{type}>")
+      close_tag("</#{type}>")
     end
 
     def start_tag(type, options = {})
@@ -27,17 +27,17 @@ module ModelBasedHtml
     end
 
     def value_tag(tag, method_or_value, options, &block)
-      concat(start_tag(tag, attributes(method_or_value, options)))
+      open_tag(start_tag(tag, attributes(method_or_value, options)))
       concat_or_yield(value(method_or_value), "</#{tag}>", &block)
     end
 
     def value_tag_h(tag, method_or_value, options, &block)
-      concat(start_tag(tag, attributes(method_or_value, options)))
+      open_tag(start_tag(tag, attributes(method_or_value, options)))
       concat_or_yield(h(value(method_or_value)), "</#{tag}>", &block)
     end
 
     def name_tag(tag, method_or_value, options, &block)
-      concat(start_tag(tag, attributes(method_or_value, options)))
+      open_tag(start_tag(tag, attributes(method_or_value, options)))
       concat_or_yield(name(method_or_value), "</#{tag}>", &block)
     end
 
@@ -79,7 +79,7 @@ module ModelBasedHtml
       else
         concat(str)
       end
-      concat(args.join) unless args.empty?
+      close_tag(args.join) unless args.empty?
     end
 
     def value(method_or_value)
@@ -96,9 +96,23 @@ module ModelBasedHtml
     # echo it in your views.
     # <% dl.dd :name %> will be the same as <%= dl.dd :name %>
     def concat(*args)
+      @tags_opened ||= 0
       @template.concat("\n")
+      @template.concat("  " * (@tags_opened))
       @template.concat(*args)
       ""
+    end
+
+    def open_tag(*args)
+      @tags_opened ||= 0
+      concat(*args)
+      @tags_opened += 1
+    end
+
+    def close_tag(*args)
+      @tags_opened ||= 1
+      @tags_opened = (@tags_opened - 1).abs
+      concat(*args)
     end
 
   end
