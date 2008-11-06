@@ -23,7 +23,9 @@ module ModelBasedHtml
       reset_cell_count
       open_tag(start_tag(:thead, options))
       @inside_head = true
-      yield
+      tr(:class => "thead", :object_html => nil) do
+        yield
+      end
       @inside_head = false
       close_tag("</thead>")
     end
