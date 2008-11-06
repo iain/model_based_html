@@ -8,11 +8,12 @@ module ModelBasedHtml
     end
 
     # Sets all the defaults and stuff
-    def default(type, object, template, &block)
+    def default(type, object, template, options = {}, &block)
       object = object.to_s.camelize.constantize.new if object.is_a?(Symbol)
       @object = object
       @template = template
-      open_tag(start_tag(type, :object_html => @object))
+      options = { :object_html => @object }.merge(options)
+      open_tag(start_tag(type, options))
       yield self
       close_tag("</#{type}>")
     end
@@ -96,6 +97,7 @@ module ModelBasedHtml
     # echo it in your views.
     # <% dl.dd :name %> will be the same as <%= dl.dd :name %>
     def concat(*args)
+      args[0] = args.at(0).to_s
       @tags_opened ||= 0
       @template.concat("\n")
       @template.concat("  " * (@tags_opened))

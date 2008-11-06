@@ -15,7 +15,8 @@ module ModelBasedHtml
         object = collection.first
       end
       @collection = collection
-      default(:table, object, template, &block)
+      @columns = []
+      default(:table, object, template, { :object_html => collection }, &block)
     end
 
     def head(options = {}, &block)
@@ -36,20 +37,18 @@ module ModelBasedHtml
         sanitize = options.delete(:sanitize) or false
         open_tag(start_tag(:tbody, options))
     
-        if block_given?
-          @collection.each do |object|
+        @collection.each do |object|
+          if block_given?
             @object = object
             yield object
-          end
-        else
-          raise ArgumentError, "No columns defined. Make a head with at least 1 th." if @columns.nil? or @columns.empty?
-          @collection.each do |o|
-            tr(o) do
+          else
+            raise ArgumentError, "No columns defined. Make a head with at least 1 th." if @columns.nil? or @columns.empty?
+            tr(:object_html => object) do
               @columns.each do |column|
-                if columns.is_a?(Symbol)
-                  sanitize ? td_h(o.send(column)) : td(o.send(column))
+                if column.is_a?(Symbol)
+                  sanitize ? td_h(object.send(column)) : td(object.send(column))
                 else
-                  td('')
+                  td('&nbsp;', :class => 'empty_cell')
                 end
               end
             end
