@@ -19,6 +19,8 @@ module ModelBasedHtml
       default(:table, object, template, { :object_html => collection }, &block)
     end
 
+    # Renders a thead. You need this to register th's for automatic
+    # rendering using <tt>body</tt> without a block.
     def head(options = {}, &block)
       return "" if @collection.empty? and not @force
       reset_cell_count
@@ -31,6 +33,9 @@ module ModelBasedHtml
       close_tag("</thead>")
     end
 
+    # Loops your collection inside a tbody tag. If you don't specify a block
+    # it will try to render a tbody-element based on the columns specified in
+    # the thead.
     def body(options = {}, &block)
       when_not_empty do
         reset_cell_count
@@ -58,16 +63,23 @@ module ModelBasedHtml
       end
     end
 
+    # Renders a td. When method or value is a symbol, it will try
+    # to get the value from the object, if you're currently in a
+    # <tt>body</tt>
     def td(method_or_value = nil, options = {}, &block)
       count_cell
       value_tag(:td, method_or_value, options, &block)
     end
 
+    # Renders a td while escaping method_or_value.
     def td_h(method_or_value = nil, options = {}, &block)
       count_cell
       value_tag_h(:td, method_or_value, options, &block)
     end
 
+    # Render a th as a name_tag, so it calls human_attribute_name if
+    # a symbol has been specified. You will need to do this for <tt>head</tt>
+    # to render automatically.
     def th(method_or_value = nil, options = {}, &block)
       count_cell
       @columns ||= []
@@ -75,6 +87,7 @@ module ModelBasedHtml
       name_tag(:th, method_or_value, options, &block)
     end
 
+    # Render a tr-block. Specify :object_html to bind it to an object.
     def tr(options = {}, &block)
       reset_cell_count
       options = {:object_html => @object}.merge(options)
@@ -84,10 +97,20 @@ module ModelBasedHtml
       close_tag("</tr>")
     end
 
+    # Returns odd or even
     def odd_or_even
       @template.cycle("odd", "even", :name => "table_#{self.object_id}")
     end
 
+    # Resets the odd or even cycle
+    def reset_odd_or_even
+      @template.reset_cycle("table_#{self.object_id}")
+    end
+
+    # Yields or displays a message when the collection is not empty.
+    # When no message has been specified, it'll try to translate a message.
+    # If a forcing class has been specified in table_for, it will automatically
+    # render a td with a colspan to cover the entire row.
     def when_empty(message = nil, &block)
       if @collection.empty?
         if @force
@@ -102,10 +125,12 @@ module ModelBasedHtml
       end
     end
 
+    # Yields only when the collection specified is not empty.
     def when_not_empty(&block)
       yield unless @collection.empty?
     end
 
+    # Returns the maximum amount of cells used in one row.
     def width
       @table_width
     end
