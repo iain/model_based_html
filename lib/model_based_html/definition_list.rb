@@ -24,12 +24,14 @@ module ModelBasedHtml
       dt(method_or_value, options)
       dd(method_or_value, options, &block)
     end
+    method_alias :show, :dt_and_dd
 
     # Same as dt_and_dd, but escapes the html in method_or_value.
     def dt_and_dd_h(method_or_value = nil, options = {}, &block)
       dt(method_or_value, options)
       dd_h(method_or_value, options, &block)
     end
+    method_alias :show_h, :dt_and_dd_h
 
   end
   

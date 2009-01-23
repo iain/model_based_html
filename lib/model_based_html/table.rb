@@ -33,6 +33,15 @@ module ModelBasedHtml
       close_tag("</thead>")
     end
 
+    # Renders a tfoot.
+    def foot(options = {}, &block)
+      return "" if @collection.empty?
+      reset_cell_count
+      open_tag(start_tag(:tfoot, options))
+      yield
+      close_tag("</tfoot>")
+    end
+
     # Loops your collection inside a tbody tag. If you don't specify a block
     # it will try to render a tbody-element based on the columns specified in
     # the thead.
